@@ -1,0 +1,56 @@
+version: '2'
+services:
+  web:
+    build:
+      context: ./
+      dockerfile: ./docker/web.docker
+    volumes:
+      - ./:/var/www
+      - ./docker/log/nginx:/var/log/nginx
+    ports:
+      - '8000:80'
+    links:
+      - app
+      - mysql
+    environment:
+      - DB_HOST=mysql
+  app:
+    build:
+      context: ./
+      dockerfile: ./docker/app.docker
+    volumes:
+      - ./:/var/www
+    environment:
+      - DB_HOST=mysql
+  mysql:
+    image: mysql:5.7
+    ports:
+      - '3306:3306'
+    environment:
+      - MYSQL_USER=root
+      - MYSQL_ROOT_PASSWORD=secret
+      - MYSQL_DATABASE=homestead
+    volumes:
+      - ./docker/data/db:/var/lib/mysql
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:5.2.2
+    container_name: elasticsearch
+    environment:
+      - xpack.security.enabled=false
+      - cluster.name=docker-cluster
+      - bootstrap.memory_lock=true
+      - 'ES_JAVA_OPTS=-Xms512m -Xmx512m'
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    mem_limit: 1g
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - ./docker/data/es:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
